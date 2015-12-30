@@ -33,13 +33,15 @@ SoapyAudio::SoapyAudio(const SoapySDR::Kwargs &args)
     sampleRate = 48000;
     centerFrequency = 0;
 
-    bufferLength = DEFAULT_BUFFER_LENGTH;
     numBuffers = DEFAULT_NUM_BUFFERS;
 
     agcMode = false;
 
     bufferedElems = 0;
     resetBuffer = false;
+    
+    streamActive = false;
+    sampleRateChanged.store(false);
 
     if (args.count("device_id") != 0)
     {
@@ -66,10 +68,6 @@ SoapyAudio::SoapyAudio(const SoapySDR::Kwargs &args)
     RtAudio endac;
     
     devInfo = endac.getDeviceInfo(deviceId);
-
-    inputParameters.deviceId = deviceId;    
-    inputParameters.nChannels = 1;
-    inputParameters.firstChannel = 0;
 }
 
 SoapyAudio::~SoapyAudio(void)
@@ -270,10 +268,13 @@ SoapySDR::ArgInfoList SoapyAudio::getFrequencyArgsInfo(const int direction, cons
 
 void SoapyAudio::setSampleRate(const int direction, const size_t channel, const double rate)
 {
-    sampleRate = rate;
-    resetBuffer = true;
     SoapySDR_logf(SOAPY_SDR_DEBUG, "Setting sample rate: %d", sampleRate);
-    // TODO
+
+    if (sampleRate != rate) {
+        sampleRate = rate;
+        resetBuffer = true;
+        sampleRateChanged.store(true);
+    }
 }
 
 double SoapyAudio::getSampleRate(const int direction, const size_t channel) const
@@ -343,3 +344,16 @@ std::string SoapyAudio::readSetting(const std::string &key) const
 }
 
 
+chanSetup SoapyAudio::chanSetupStrToEnum(std::string chanOpt) {
+    if (chanOpt == "mono_l") {
+        return FORMAT_MONO_L;
+    } else if (chanOpt == "mono_r") {
+        return FORMAT_MONO_R;
+    } else if (chanOpt == "stereo_iq") {
+        return FORMAT_STEREO_IQ;
+    } else if (chanOpt == "stereo_qi") {
+        return FORMAT_STEREO_QI;
+    } else {
+        return FORMAT_MONO_L;
+    }
+}

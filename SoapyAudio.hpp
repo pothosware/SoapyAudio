@@ -37,9 +37,13 @@ typedef enum audioStreamFormat
     AUDIO_FORMAT_FLOAT32, AUDIO_FORMAT_INT16, AUDIO_FORMAT_INT8
 } audioStreamFormat;
 
+typedef enum chanSetup
+{
+    FORMAT_MONO_L, FORMAT_MONO_R, FORMAT_STEREO_IQ, FORMAT_STEREO_QI
+} chanSetup;
+
 #define DEFAULT_BUFFER_LENGTH 2048
 #define DEFAULT_NUM_BUFFERS 6
-#define BYTES_PER_SAMPLE 4
 
 class SoapyAudio: public SoapySDR::Device
 {
@@ -192,6 +196,7 @@ public:
      * Utility
      ******************************************************************/
 
+    chanSetup chanSetupStrToEnum(std::string chanOpt);
 
     /*******************************************************************
      * Settings API
@@ -215,16 +220,17 @@ private:
 
     //cached settings
     audioStreamFormat asFormat;
+    chanSetup cSetup;
     uint32_t sampleRate, centerFrequency;
     unsigned int bufferLength;
     size_t numBuffers;
-    bool agcMode;
+    bool agcMode, streamActive;
+    std::atomic_bool sampleRateChanged;
     double audioGain;
+    int elementsPerSample;
 
 public:
     //async api usage
-    std::thread _rx_async_thread;
-    void rx_async_operation(void);
     int rx_callback(void *inputBuffer, unsigned int nBufferFrames, double streamTime, RtAudioStreamStatus status);
 
     std::mutex _buf_mutex;

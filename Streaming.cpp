@@ -47,15 +47,29 @@ std::string SoapyAudio::getNativeStreamFormat(const int direction, const size_t 
 SoapySDR::ArgInfoList SoapyAudio::getStreamArgsInfo(const int direction, const size_t channel) const {
     SoapySDR::ArgInfoList streamArgs;
 
-    // SoapySDR::ArgInfo bufflenArg;
-    // bufflenArg.key = "bufflen";
-    // bufflenArg.value = "16384";
-    // bufflenArg.name = "Buffer Size";
-    // bufflenArg.description = "Number of bytes per buffer, multiples of 512 only.";
-    // bufflenArg.units = "bytes";
-    // bufflenArg.type = SoapySDR::ArgInfo::INT;
-    //
-    // streamArgs.push_back(bufflenArg);
+    SoapySDR::ArgInfo chanArg;
+    chanArg.key = "chan";
+    chanArg.value = "mono_l";
+    chanArg.name = "Channel Setup";
+    chanArg.description = "Input channel configuration.";
+    chanArg.type = SoapySDR::ArgInfo::STRING;
+    
+    std::vector<std::string> chanOpts;
+    std::vector<std::string> chanOptNames;
+    
+    chanOpts.push_back("mono_l");
+    chanOptNames.push_back("Mono Left");
+    chanOpts.push_back("mono_r");
+    chanOptNames.push_back("Mono Right");
+    chanOpts.push_back("stereo_iq");
+    chanOptNames.push_back("Complex L/R = I/Q");
+    chanOpts.push_back("stereo_qi");
+    chanOptNames.push_back("Complex L/R = Q/I");
+
+    chanArg.options = chanOpts;
+    chanArg.optionNames = chanOptNames;
+
+    streamArgs.push_back(chanArg);
 
     return streamArgs;
 }
@@ -73,27 +87,13 @@ static int _rx_callback(void *outputBuffer, void *inputBuffer, unsigned int nBuf
     return self->rx_callback(inputBuffer, nBufferFrames, streamTime, status);
 }
 
-void SoapyAudio::rx_async_operation(void)
-{
-    //printf("rx_async_operation\n");
-    try {
-#ifndef _MSC_VER
-        opts.priority = sched_get_priority_max(SCHED_FIFO);
-#endif
-        //    opts.flags = RTAUDIO_MINIMIZE_LATENCY;
-        opts.flags = RTAUDIO_SCHEDULE_REALTIME;
-
-        dac.openStream(NULL, &inputParameters, RTAUDIO_FLOAT32, sampleRate, &bufferLength, &_rx_callback, (void *) this, &opts);
-        dac.startStream();
-    } catch (RtAudioError& e) {
-        throw std::runtime_error("RtAudio init error '" + e.getMessage());
-    }
-    //printf("rx_async_operation done!\n");
-}
-
 int SoapyAudio::rx_callback(void *inputBuffer, unsigned int nBufferFrames, double streamTime, RtAudioStreamStatus status)
 {
     std::unique_lock<std::mutex> lock(_buf_mutex);
+
+    if (sampleRateChanged.load()) {
+        return 1;
+    }
 
     //printf("_rx_callback %d _buf_head=%d, numBuffers=%d\n", len, _buf_head, _buf_tail);
 
@@ -106,8 +106,8 @@ int SoapyAudio::rx_callback(void *inputBuffer, unsigned int nBufferFrames, doubl
 
     //copy into the buffer queue
     auto &buff = _buffs[_buf_tail];
-    buff.resize(nBufferFrames);
-    std::memcpy(buff.data(), inputBuffer, nBufferFrames * sizeof(float));
+    buff.resize(nBufferFrames * elementsPerSample);
+    std::memcpy(buff.data(), inputBuffer, nBufferFrames * elementsPerSample * sizeof(float));
 
     //increment the tail pointer
     _buf_tail = (_buf_tail + 1) % numBuffers;
@@ -157,19 +157,42 @@ SoapySDR::Stream *SoapyAudio::setupStream(
                         + "' -- Only CS8, CS16 and CF32 are supported by SoapyAudio module.");
     }
 
-    // if (args.count("buflen") != 0)
-    // {
-    //     try
-    //     {
-    //         int bufferLength_in = std::stoi(args.at("buflen"));
-    //         if (bufferLength_in > 0)
-    //         {
-    //             bufferLength = bufferLength_in;
-    //         }
-    //     }
-    //     catch (const std::invalid_argument &){}
-    // }
-    // SoapySDR_logf(SOAPY_SDR_DEBUG, "Using buffer length %d", bufferLength);
+    if (args.count("chan") != 0)
+    {
+        std::string chanOpt = args.at("chan");        
+        cSetup = chanSetupStrToEnum(chanOpt);
+    } else {
+        cSetup = FORMAT_MONO_L;
+    }
+
+    inputParameters.deviceId = deviceId;
+    
+    switch (cSetup) {
+        case FORMAT_MONO_L:
+            inputParameters.nChannels = 1;
+            inputParameters.firstChannel = 0;
+            bufferLength = DEFAULT_BUFFER_LENGTH;
+            elementsPerSample = 1;
+            break;
+        case FORMAT_MONO_R:
+            inputParameters.nChannels = 1;
+            inputParameters.firstChannel = 1;
+            bufferLength = DEFAULT_BUFFER_LENGTH;
+            elementsPerSample = 1;
+            break;        
+        case FORMAT_STEREO_IQ:
+            inputParameters.nChannels = 2;
+            inputParameters.firstChannel = 0;
+            bufferLength = DEFAULT_BUFFER_LENGTH*2;
+            elementsPerSample = 2;
+            break;        
+        case FORMAT_STEREO_QI:
+            inputParameters.nChannels = 2;
+            inputParameters.firstChannel = 0;
+            bufferLength = DEFAULT_BUFFER_LENGTH*2;
+            elementsPerSample = 2;
+            break;
+    }
 
     //clear async fifo counts
     _buf_tail = 0;
@@ -191,7 +214,7 @@ void SoapyAudio::closeStream(SoapySDR::Stream *stream)
 
 size_t SoapyAudio::getStreamMTU(SoapySDR::Stream *stream) const
 {
-    return bufferLength / BYTES_PER_SAMPLE;
+    return bufferLength / elementsPerSample;
 }
 
 int SoapyAudio::activateStream(
@@ -204,22 +227,38 @@ int SoapyAudio::activateStream(
     resetBuffer = true;
     bufferedElems = 0;
 
-    //start the async thread
-    if (!_rx_async_thread.joinable()) {
-        _rx_async_thread = std::thread(&SoapyAudio::rx_async_operation, this);
-    }
+    try {
+#ifndef _MSC_VER
+        opts.priority = sched_get_priority_max(SCHED_FIFO);
+#endif
+        //    opts.flags = RTAUDIO_MINIMIZE_LATENCY;
+        opts.flags = RTAUDIO_SCHEDULE_REALTIME;
 
+        sampleRateChanged.store(false);
+        dac.openStream(NULL, &inputParameters, RTAUDIO_FLOAT32, sampleRate, &bufferLength, &_rx_callback, (void *) this, &opts);
+        dac.startStream();
+
+        streamActive = true;
+    } catch (RtAudioError& e) {
+        throw std::runtime_error("RtAudio init error '" + e.getMessage());
+    }
+    
     return 0;
 }
 
 int SoapyAudio::deactivateStream(SoapySDR::Stream *stream, const int flags, const long long timeNs)
 {
     if (flags != 0) return SOAPY_SDR_NOT_SUPPORTED;
-    if (_rx_async_thread.joinable())
-    {
-        dac.abortStream();
-        _rx_async_thread.join();
+
+    if (dac.isStreamRunning()) {
+        dac.stopStream();
     }
+    if (dac.isStreamOpen()) {
+        dac.closeStream();
+    }
+    
+    streamActive = false;
+    
     return 0;
 }
 
@@ -230,7 +269,23 @@ int SoapyAudio::readStream(
         int &flags,
         long long &timeNs,
         const long timeoutUs)
-{
+{    
+    if (!dac.isStreamRunning()) {
+        return 0;
+    }
+    
+    if (sampleRateChanged.load()) {
+        if (dac.isStreamRunning()) {
+            dac.stopStream();
+        }
+        if (dac.isStreamOpen()) {
+            dac.closeStream();
+        }
+        dac.openStream(NULL, &inputParameters, RTAUDIO_FLOAT32, sampleRate, &bufferLength, &_rx_callback, (void *) this, &opts);
+        dac.startStream();
+        sampleRateChanged.store(false);
+    }
+
     //this is the user's buffer for channel 0
     void *buff0 = buffs[0];
 
@@ -249,35 +304,83 @@ int SoapyAudio::readStream(
     {
         float *ftarget = (float *) buff0;
         std::complex<float> tmp;
-        for (size_t i = 0; i < returnedElems; i++)
-        {
-            ftarget[i * 2] = _currentBuff[i];
-            ftarget[i * 2 + 1] = 0;
+        if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                ftarget[i * 2] = _currentBuff[i];
+                ftarget[i * 2 + 1] = 0;
+            }            
         }
+        if (cSetup == FORMAT_STEREO_IQ) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                ftarget[i * 2] = _currentBuff[i * 2];
+                ftarget[i * 2 + 1] = _currentBuff[i * 2 + 1];
+            }            
+        }
+        if (cSetup == FORMAT_STEREO_QI) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                ftarget[i * 2] = _currentBuff[i * 2 + 1];
+                ftarget[i * 2 + 1] = _currentBuff[i * 2];
+            }            
+        }            
     }
     else if (asFormat == AUDIO_FORMAT_INT16)
     {
         int16_t *itarget = (int16_t *) buff0;
         std::complex<int16_t> tmp;
-        for (size_t i = 0; i < returnedElems; i++)
-        {
-            itarget[i * 2] = int16_t(_currentBuff[i] * 32767.0);
-            itarget[i * 2 + 1] = 0;
+        if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                itarget[i * 2] = int16_t(_currentBuff[i] * 32767.0);
+                itarget[i * 2 + 1] = 0;
+            }
         }
+        if (cSetup == FORMAT_STEREO_IQ) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+            }
+        }
+        if (cSetup == FORMAT_STEREO_QI) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 32767.0);
+            }            
+        }            
     }
     else if (asFormat == AUDIO_FORMAT_INT8)
     {
         int8_t *itarget = (int8_t *) buff0;
-        for (size_t i = 0; i < returnedElems; i++)
-        {
-            itarget[i * 2] = int8_t(_currentBuff[i]*127.0);
-            itarget[i * 2 + 1] = 0;
+        if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                itarget[i * 2] = int8_t(_currentBuff[i] * 127.0);
+                itarget[i * 2 + 1] = 0;
+            }
         }
+        if (cSetup == FORMAT_STEREO_IQ) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
+                itarget[i * 2 + 1] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+            }
+        }
+        if (cSetup == FORMAT_STEREO_QI) {
+            for (size_t i = 0; i < returnedElems; i++)
+            {
+                itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+                itarget[i * 2 + 1] = int8_t(_currentBuff[i * 2] * 127.0);
+            }            
+        }            
     }
 
     //bump variables for next call into readStream
     bufferedElems -= returnedElems;
-    _currentBuff += returnedElems*BYTES_PER_SAMPLE;
+    _currentBuff += returnedElems * elementsPerSample;
 
     //return number of elements written to buff0
     if (bufferedElems != 0) flags |= SOAPY_SDR_MORE_FRAGMENTS;
@@ -346,7 +449,7 @@ int SoapyAudio::acquireReadBuffer(
     flags = 0;
 
     //return number available
-    return _buffs[handle].size() / BYTES_PER_SAMPLE;
+    return _buffs[handle].size() / elementsPerSample;
 }
 
 void SoapyAudio::releaseReadBuffer(
