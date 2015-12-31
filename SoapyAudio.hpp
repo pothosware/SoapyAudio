@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 
 typedef enum audioStreamFormat
