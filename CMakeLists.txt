@@ -33,7 +33,7 @@ endif ()
 # list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rtaudio)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/RtAudio)
 
 #enable c++11 features
 if(CMAKE_COMPILER_IS_GNUCXX)
