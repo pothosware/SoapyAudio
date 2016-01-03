@@ -62,6 +62,8 @@ void RigThread::run() {
         SoapySDR_logf(SOAPY_SDR_DEBUG, "Rig Freq: %f", freq);
     }
     
+    rig_close(rig);
+    
     SoapySDR_log(SOAPY_SDR_DEBUG, "Rig thread exiting.");    
 };
 

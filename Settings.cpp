@@ -446,7 +446,7 @@ SoapySDR::ArgInfoList SoapyAudio::getSettingInfo(void) const
     rigFileArg.key = "rig_port";
     rigFileArg.value = "/dev/ttyUSB0";
     rigFileArg.name = "Rig Serial Port";
-    rigFileArg.description = "Select hamlib rig serial port file / COMx.";
+    rigFileArg.description = "hamlib rig Serial Port dev / COMx / IP-Address";
     rigFileArg.type = SoapySDR::ArgInfo::STRING;
     
     setArgs.push_back(rigFileArg);
