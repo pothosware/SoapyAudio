@@ -24,6 +24,10 @@
 
 #include "SoapyAudio.hpp"
 
+#ifdef USE_HAMLIB
+std::vector<const struct rig_caps *> SoapyAudio::rigCaps;
+#endif
+
 SoapyAudio::SoapyAudio(const SoapySDR::Kwargs &args)
 {
     deviceId = -1;
@@ -68,11 +72,50 @@ SoapyAudio::SoapyAudio(const SoapySDR::Kwargs &args)
     RtAudio endac;
     
     devInfo = endac.getDeviceInfo(deviceId);
+    
+#ifdef USE_HAMLIB
+    t_Rig = nullptr;
+    rigThread = nullptr;
+    rigModel = 0;
+    rigFile = "";
+    rigSerialRate = 0;
+    
+    if (args.count("rig") != 0 && args.at("rig") != "") {
+        try {
+            rigModel = std::stoi(args.at("rig"));
+        } catch (const std::invalid_argument &) {
+            throw std::runtime_error("rig is invalid.");
+        }
+        if (!args.count("rig_rate")) {
+            throw std::runtime_error("rig_rate missing.");
+        }
+        try {
+            rigSerialRate = std::stoi(args.at("rig_rate"));
+        } catch (const std::invalid_argument &) {
+            throw std::runtime_error("rig_rate is invalid.");
+        }
+
+        if (!args.count("rig_port")) {
+            throw std::runtime_error("rig_port missing.");
+        }
+        rigFile = args.at("rig_port");
+        checkRigThread();
+    }
+#endif
 }
 
 SoapyAudio::~SoapyAudio(void)
 {
-    //cleanup device handles
+#ifdef USE_HAMLIB
+    if (rigThread) {
+        if (!rigThread->isTerminated()) {
+            rigThread->terminate();
+        }
+        if (t_Rig && t_Rig->joinable()) {
+            t_Rig->join();
+        }
+    }
+#endif
 }
 
 /*******************************************************************
@@ -220,6 +263,13 @@ void SoapyAudio::setFrequency(
         centerFrequency = (uint32_t) frequency;
         resetBuffer = true;
         SoapySDR_logf(SOAPY_SDR_DEBUG, "Setting center freq: %d", centerFrequency);
+#ifdef USE_HAMLIB
+        if (rigThread && !rigThread->isTerminated()) {
+            if (rigThread->getFrequency() != frequency) {
+                rigThread->setFrequency(frequency);
+            }
+        }
+#endif
     }
 }
 
@@ -227,6 +277,11 @@ double SoapyAudio::getFrequency(const int direction, const size_t channel, const
 {
     if (name == "RF")
     {
+#ifdef USE_HAMLIB
+        if (rigThread && !rigThread->isTerminated()) {
+            return rigThread->getFrequency();
+        }
+#endif
         return (double) centerFrequency;
     }
 
@@ -323,22 +378,147 @@ SoapySDR::ArgInfoList SoapyAudio::getSettingInfo(void) const
 {
     SoapySDR::ArgInfoList setArgs;
 
+#ifdef USE_HAMLIB
+    // Rig Control
+    SoapySDR::ArgInfo rigArg;
+    rigArg.key = "rig";
+    rigArg.value = "";
+    rigArg.name = "Rig Control";
+    rigArg.description = "Select hamlib rig control type.";
+    rigArg.type = SoapySDR::ArgInfo::STRING;
+    
+    std::vector<std::string> rigOpts;
+    std::vector<std::string> rigOptNames;
+
+    rigOpts.push_back("");
+    rigOptNames.push_back("None");
+    
+    for (std::vector<const struct rig_caps *>::const_iterator i = rigCaps.begin(); i != rigCaps.end(); i++) {
+        const struct rig_caps *rc = (*i);
+
+        rigOpts.push_back(std::to_string(rc->rig_model));
+        rigOptNames.push_back(std::string(rc->mfg_name) + " " + std::string(rc->model_name));
+    }
+
+    rigArg.options = rigOpts;
+    rigArg.optionNames = rigOptNames;
+
+    setArgs.push_back(rigArg);
+
+    // Rig Control
+    SoapySDR::ArgInfo rigRateArg;
+    rigRateArg.key = "rig_rate";
+    rigRateArg.value = "57600";
+    rigRateArg.name = "Rig Serial Rate";
+    rigRateArg.description = "Select hamlib rig serial control rate.";
+    rigRateArg.type = SoapySDR::ArgInfo::STRING;
+    
+    std::vector<std::string> rigRateOpts;
+    std::vector<std::string> rigRateOptNames;
+
+    rigRateOpts.push_back("1200");
+    rigRateOptNames.push_back("1200 baud");
+    rigRateOpts.push_back("2400");
+    rigRateOptNames.push_back("2400 baud");
+    rigRateOpts.push_back("4800");
+    rigRateOptNames.push_back("4800 baud");
+    rigRateOpts.push_back("9600");
+    rigRateOptNames.push_back("9600 baud");
+    rigRateOpts.push_back("19200");
+    rigRateOptNames.push_back("19200 baud");
+    rigRateOpts.push_back("38400");
+    rigRateOptNames.push_back("38400 baud");
+    rigRateOpts.push_back("57600");
+    rigRateOptNames.push_back("57600 baud");
+    rigRateOpts.push_back("115200");
+    rigRateOptNames.push_back("115200 baud");
+    rigRateOpts.push_back("128000");
+    rigRateOptNames.push_back("128000 baud");
+    rigRateOpts.push_back("256000");
+    rigRateOptNames.push_back("256000 baud");
+
+    rigRateArg.options = rigRateOpts;
+    rigRateArg.optionNames = rigRateOptNames;
+
+    setArgs.push_back(rigRateArg);
+
+    SoapySDR::ArgInfo rigFileArg;
+    rigFileArg.key = "rig_port";
+    rigFileArg.value = "/dev/ttyUSB0";
+    rigFileArg.name = "Rig Serial Port";
+    rigFileArg.description = "Select hamlib rig serial port file / COMx.";
+    rigFileArg.type = SoapySDR::ArgInfo::STRING;
+    
+    setArgs.push_back(rigFileArg);
+    
+#endif
+    
     return setArgs;
 }
 
 void SoapyAudio::writeSetting(const std::string &key, const std::string &value)
 {
-    // if (key == "")
-    // {
-    // }
+#ifdef USE_HAMLIB   
+    bool rigReset = false; 
+    if (key == "rig")
+    {
+        try {
+            rig_model_t newModel = std::stoi(value);
+            if (newModel != rigModel) {
+                rigReset = true;
+                rigModel = newModel;
+            }
+        } catch (const std::invalid_argument &) {
+            rigModel = 0;
+        }
+    }
+
+    if (key == "rig_rate")
+    {
+        try {
+            int newSerialRate = std::stoi(value);
+            if (newSerialRate != rigSerialRate) {
+                rigSerialRate = newSerialRate;
+                rigReset = true;
+            }
+        } catch (const std::invalid_argument &) {
+            rigSerialRate = 57600;
+        }
+    }
+
+    if (key == "rig_port")
+    {
+        if (rigFile != value) {
+            rigFile = value;
+            rigReset = true;
+        }
+    }
+    
+    if (rigReset) {
+        if (rigThread && !rigThread->isTerminated()) {
+            rigThread->terminate();
+        }
+        checkRigThread();        
+    }
+#endif
 }
 
 std::string SoapyAudio::readSetting(const std::string &key) const
 {
-    // if (key == "") {
-    //     return "";
-    // }
-
+#ifdef USE_HAMLIB
+    if (key == "rig")
+    {
+        return std::to_string(rigModel);
+    }
+    if (key == "rig_rate")
+    {
+        return std::to_string(rigSerialRate);
+    }
+    if (key == "rig_port")
+    {
+        return rigFile;
+    }
+#endif
     // SoapySDR_logf(SOAPY_SDR_WARNING, "Unknown setting '%s'", key.c_str());
     return "";
 }
@@ -357,3 +537,23 @@ chanSetup SoapyAudio::chanSetupStrToEnum(std::string chanOpt) {
         return FORMAT_MONO_L;
     }
 }
+
+#ifdef USE_HAMLIB
+void SoapyAudio::checkRigThread() {    
+    if (!rigModel || !rigSerialRate || rigFile == "") {
+        return;
+    }
+    if (!rigThread) {
+        rigThread = new RigThread();
+    }
+    if (rigThread->isTerminated()) {
+        if (t_Rig && t_Rig->joinable()) {
+            t_Rig->join();
+            delete t_Rig;
+        }
+        rigThread->setup(rigModel, rigFile, rigSerialRate);
+        t_Rig = new std::thread(&RigThread::threadMain, rigThread);
+    }
+}
+
+#endif

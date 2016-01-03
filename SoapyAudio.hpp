@@ -32,6 +32,13 @@
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include <string>
+#include <cstring>
+#include <algorithm>
+
+#ifdef USE_HAMLIB
+#include "RigThread.h"
+#endif
 
 typedef enum audioStreamFormat
 {
@@ -246,4 +253,21 @@ public:
     size_t _currentHandle;
     size_t bufferedElems;
     bool resetBuffer;
+
+
+#ifdef USE_HAMLIB
+public:
+    static int add_hamlib_rig(const struct rig_caps *rc, void* f);
+    static std::vector<const struct rig_caps *> rigCaps;
+    
+    void checkRigThread();
+    
+private:
+    RigThread *rigThread;
+    std::thread *t_Rig;
+    
+    rig_model_t rigModel;
+    std::string rigFile;
+    int rigSerialRate;    
+#endif
 };

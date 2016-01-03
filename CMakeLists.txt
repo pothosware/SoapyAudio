@@ -9,6 +9,27 @@ if (NOT SoapySDR_FOUND)
     message(FATAL_ERROR "Soapy SDR development files not found...")
 endif ()
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(USE_HAMLIB ON CACHE BOOL "Support hamlib for radio control functions.")
+
+if (USE_HAMLIB)
+    find_package(hamlib REQUIRED)
+    
+    if (NOT hamlib_FOUND)
+        message(FATAL_ERROR "hamlib development files not found...")
+    endif ()
+    
+    include_directories(${hamlib_INCLUDE_DIRS})
+    if (${hamlib_STATIC_FOUND})
+        link_libraries(${hamlib_STATIC_LIBRARIES})
+    else()
+        link_libraries(${hamlib_LIBRARIES})
+    endif()
+
+	ADD_DEFINITIONS(-DUSE_HAMLIB)	    
+endif ()
+
 # list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -113,6 +134,14 @@ FIND_LIBRARY(COREAUDIO_LIBRARY CoreAudio)
 SET (AUDIO_LIBS ${COREAUDIO_LIBRARY} ${AUDIO_LIBS})
 ENDIF (APPLE)
 
+IF (USE_HAMLIB)
+    SET (
+        HAMLIB_SOURCES 
+        RigThread.cpp
+        RigThread.h
+    )
+ENDIF()
+
 SOAPY_SDR_MODULE_UTIL(
     TARGET audioSupport
     SOURCES
@@ -122,6 +151,7 @@ SOAPY_SDR_MODULE_UTIL(
         Streaming.cpp
         RtAudio/RtAudio.cpp
         RtAudio/RtAudio.h        
+        ${HAMLIB_SOURCES}
     LIBRARIES
         ${AUDIO_LIBS}
 )

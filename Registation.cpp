@@ -84,9 +84,25 @@ static std::vector<SoapySDR::Kwargs> findAudio(const SoapySDR::Kwargs &args)
         
         results.push_back(soapyInfo);
     }
+    
+#ifdef USE_HAMLIB
+	rig_set_debug(RIG_DEBUG_ERR);
+	rig_load_all_backends();
+    SoapyAudio::rigCaps.clear();    
+	rig_list_foreach(SoapyAudio::add_hamlib_rig, 0);    
+    std::sort(SoapyAudio::rigCaps.begin(), SoapyAudio::rigCaps.end(), rigGreater());
+#endif
 
     return results;
 }
+
+#ifdef USE_HAMLIB
+int SoapyAudio::add_hamlib_rig(const struct rig_caps *rc, void* f)
+{
+    rigCaps.push_back(rc);
+	return 1;
+}
+#endif
 
 static SoapySDR::Device *makeAudio(const SoapySDR::Kwargs &args)
 {
