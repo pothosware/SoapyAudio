@@ -11,7 +11,7 @@ endif ()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(USE_HAMLIB OFF CACHE BOOL "Support hamlib for radio control functions.")
+option(USE_HAMLIB OFF "Support hamlib for radio control functions.")
 
 if (USE_HAMLIB)
     find_package(hamlib REQUIRED)
@@ -33,7 +33,7 @@ endif ()
 # list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rtaudio)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/RtAudio)
 
 #enable c++11 features
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -48,7 +48,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif()
 
     #Thread support enabled (not the same as -lpthread)
-    list(APPEND ${AUDIO_LIBS} -pthread)
+    list(APPEND AUDIO_LIBS -pthread)
 
     #disable warnings for unused parameters
     add_definitions(-Wno-unused-parameter)
