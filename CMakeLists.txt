@@ -48,7 +48,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif()
 
     #Thread support enabled (not the same as -lpthread)
-    list(APPEND ${AUDIO_LIBS} -pthread)
+    list(APPEND AUDIO_LIBS -pthread)
 
     #disable warnings for unused parameters
     add_definitions(-Wno-unused-parameter)
