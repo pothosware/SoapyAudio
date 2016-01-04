@@ -63,6 +63,7 @@ void RigThread::run() {
     }
     
     rig_close(rig);
+    rig_cleanup(rig);
     
     SoapySDR_log(SOAPY_SDR_DEBUG, "Rig thread exiting.");    
 };
