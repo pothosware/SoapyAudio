@@ -41,6 +41,13 @@ void RigThread::run() {
 	strncpy(rig->state.rigport.pathname, rigFile.c_str(), FILPATHLEN - 1);
 	rig->state.rigport.parm.serial.rate = serialRate;
 	retcode = rig_open(rig);
+    
+    if (retcode != 0) {
+        SoapySDR_log(SOAPY_SDR_ERROR, "Rig failed to init.");
+        terminated.store(true);
+        return;
+    }
+    
 	char *info_buf = (char *)rig_get_info(rig);
     SoapySDR_logf(SOAPY_SDR_DEBUG, "Rig Info: %s", info_buf);
     
