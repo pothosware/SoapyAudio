@@ -49,7 +49,10 @@ void RigThread::run() {
     }
     
 	char *info_buf = (char *)rig_get_info(rig);
-    SoapySDR_logf(SOAPY_SDR_DEBUG, "Rig Info: %s", info_buf);
+    
+    if (info_buf != nullptr) {
+        SoapySDR_logf(SOAPY_SDR_DEBUG, "Rig Info: %s", info_buf);
+    }
     
     while (!terminated.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(150));
