@@ -195,7 +195,7 @@ std::vector<std::string> SoapyAudio::listGains(const int direction, const size_t
     //the functions below have a "name" parameter
     std::vector<std::string> results;
 
-    results.push_back("AUDIO");
+    // results.push_back("AUDIO");
 
     return results;
 }
