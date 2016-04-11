@@ -236,6 +236,8 @@ private:
     std::atomic_bool sampleRateChanged;
     double audioGain;
     int elementsPerSample;
+    int sampleOffset;
+    float sampleOffsetBuffer[2];
 
 public:
     //async api usage

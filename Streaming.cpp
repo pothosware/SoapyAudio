@@ -300,84 +300,320 @@ int SoapyAudio::readStream(
     size_t returnedElems = std::min(bufferedElems, numElems);
 
     //convert into user's buff0
-    if (asFormat == AUDIO_FORMAT_FLOAT32)
-    {
-        float *ftarget = (float *) buff0;
-        std::complex<float> tmp;
-        if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                ftarget[i * 2] = _currentBuff[i];
-                ftarget[i * 2 + 1] = 0;
+    if (sampleOffset) {
+        if (asFormat == AUDIO_FORMAT_FLOAT32)
+        {
+            float *ftarget = (float *) buff0;
+            std::complex<float> tmp;
+            if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    ftarget[i * 2] = _currentBuff[i];
+                    ftarget[i * 2 + 1] = 0;
+                }            
+            }
+            if (cSetup == FORMAT_STEREO_IQ) {
+                if (sampleOffset > 0) {
+                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2];
+                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2 + 1];
+                    }            
+                    size_t iStart = returnedElems-sampleOffset;
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2];
+                        ftarget[i * 2 + 1] = sampleOffsetBuffer[(i - iStart) * 2 + 1];
+                    }            
+                    for (int i = 0; i < sampleOffset; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[i * 2 + 1];
+                    }                    
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2];
+                        ftarget[i * 2 + 1] = sampleOffsetBuffer[i * 2 + 1];
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
+                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2];
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }                    
+                }
+            }
+            if (cSetup == FORMAT_STEREO_QI) {
+                if (sampleOffset > 0) {
+                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
+                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2];
+                    }            
+                    size_t iStart = returnedElems-sampleOffset;
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
+                        ftarget[i * 2 + 1] = sampleOffsetBuffer[(i - iStart) * 2];
+                    }            
+                    for (int i = 0; i < sampleOffset; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[i * 2];
+                    }                    
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
+                        ftarget[i * 2 + 1] = sampleOffsetBuffer[i * 2];
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        ftarget[i * 2] = _currentBuff[i * 2];
+                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2 + 1];
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
+                    }                    
+                }
             }            
         }
-        if (cSetup == FORMAT_STEREO_IQ) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                ftarget[i * 2] = _currentBuff[i * 2];
-                ftarget[i * 2 + 1] = _currentBuff[i * 2 + 1];
+        else if (asFormat == AUDIO_FORMAT_INT16)
+        {
+            int16_t *itarget = (int16_t *) buff0;
+            std::complex<int16_t> tmp;
+            if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int16_t(_currentBuff[i] * 32767.0);
+                    itarget[i * 2 + 1] = 0;
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_IQ) {
+                if (sampleOffset > 0) {
+                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 32767.0);
+                    }            
+                    size_t iStart = returnedElems-sampleOffset;
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[(i - iStart) * 2 + 1] * 32767.0);
+                    }            
+                    for (int i = 0; i < sampleOffset; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[i * 2 + 1];
+                    }                    
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i * 2 + 1] * 32767.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2] * 32767.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }                    
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_QI) {
+                if (sampleOffset > 0) {
+                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2] * 32767.0);
+                    }            
+                    size_t iStart = returnedElems-sampleOffset;
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[(i - iStart) * 2] * 32767.0);
+                    }            
+                    for (int i = 0; i < sampleOffset; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[i * 2];
+                    }                    
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i * 2] * 32767.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 32767.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
+                    }                    
+                }
             }            
         }
-        if (cSetup == FORMAT_STEREO_QI) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                ftarget[i * 2] = _currentBuff[i * 2 + 1];
-                ftarget[i * 2 + 1] = _currentBuff[i * 2];
+        else if (asFormat == AUDIO_FORMAT_INT8)
+        {
+            int8_t *itarget = (int8_t *) buff0;
+            if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int8_t(_currentBuff[i] * 127.0);
+                    itarget[i * 2 + 1] = 0;
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_IQ) {
+                if (sampleOffset > 0) {
+                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 127.0);
+                    }            
+                    size_t iStart = returnedElems-sampleOffset;
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[(i - iStart) * 2 + 1] * 127.0);
+                    }            
+                    for (int i = 0; i < sampleOffset; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[i * 2 + 1];
+                    }                    
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[i * 2 + 1] * 127.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2] * 127.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }                    
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_QI) {
+                if (sampleOffset > 0) {
+                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2] * 127.0);
+                    }            
+                    size_t iStart = returnedElems-sampleOffset;
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[(i - iStart) * 2] * 127.0);
+                    }            
+                    for (int i = 0; i < sampleOffset; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[i * 2];
+                    }                    
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[i * 2] * 127.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++)
+                    {
+                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 127.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
+                    }                    
+                }
             }            
-        }            
+        } 
+    } else {
+        if (asFormat == AUDIO_FORMAT_FLOAT32)
+        {
+            float *ftarget = (float *) buff0;
+            std::complex<float> tmp;
+            if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    ftarget[i * 2] = _currentBuff[i];
+                    ftarget[i * 2 + 1] = 0;
+                }            
+            }
+            else if (cSetup == FORMAT_STEREO_IQ) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    ftarget[i * 2] = _currentBuff[i * 2];
+                    ftarget[i * 2 + 1] = _currentBuff[i * 2 + 1];
+                }            
+            }
+            else if (cSetup == FORMAT_STEREO_QI) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    ftarget[i * 2] = _currentBuff[i * 2 + 1];
+                    ftarget[i * 2 + 1] = _currentBuff[i * 2];
+                }            
+            }            
+        }
+        else if (asFormat == AUDIO_FORMAT_INT16)
+        {
+            int16_t *itarget = (int16_t *) buff0;
+            std::complex<int16_t> tmp;
+            if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int16_t(_currentBuff[i] * 32767.0);
+                    itarget[i * 2 + 1] = 0;
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_IQ) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                    itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_QI) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                    itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 32767.0);
+                }            
+            }            
+        }
+        else if (asFormat == AUDIO_FORMAT_INT8)
+        {
+            int8_t *itarget = (int8_t *) buff0;
+            if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int8_t(_currentBuff[i] * 127.0);
+                    itarget[i * 2 + 1] = 0;
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_IQ) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
+                    itarget[i * 2 + 1] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_QI) {
+                for (size_t i = 0; i < returnedElems; i++)
+                {
+                    itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
+                    itarget[i * 2 + 1] = int8_t(_currentBuff[i * 2] * 127.0);
+                }            
+            }            
+        }
     }
-    else if (asFormat == AUDIO_FORMAT_INT16)
-    {
-        int16_t *itarget = (int16_t *) buff0;
-        std::complex<int16_t> tmp;
-        if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                itarget[i * 2] = int16_t(_currentBuff[i] * 32767.0);
-                itarget[i * 2 + 1] = 0;
-            }
-        }
-        if (cSetup == FORMAT_STEREO_IQ) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
-                itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
-            }
-        }
-        if (cSetup == FORMAT_STEREO_QI) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
-                itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 32767.0);
-            }            
-        }            
-    }
-    else if (asFormat == AUDIO_FORMAT_INT8)
-    {
-        int8_t *itarget = (int8_t *) buff0;
-        if (cSetup == FORMAT_MONO_L || cSetup == FORMAT_MONO_R) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                itarget[i * 2] = int8_t(_currentBuff[i] * 127.0);
-                itarget[i * 2 + 1] = 0;
-            }
-        }
-        if (cSetup == FORMAT_STEREO_IQ) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
-                itarget[i * 2 + 1] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
-            }
-        }
-        if (cSetup == FORMAT_STEREO_QI) {
-            for (size_t i = 0; i < returnedElems; i++)
-            {
-                itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
-                itarget[i * 2 + 1] = int8_t(_currentBuff[i * 2] * 127.0);
-            }            
-        }            
-    }
-
+    
     //bump variables for next call into readStream
     bufferedElems -= returnedElems;
     _currentBuff += returnedElems * elementsPerSample;

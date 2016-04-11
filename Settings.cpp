@@ -46,6 +46,8 @@ SoapyAudio::SoapyAudio(const SoapySDR::Kwargs &args)
     
     streamActive = false;
     sampleRateChanged.store(false);
+    
+    sampleOffset = 0;
 
     if (args.count("device_id") != 0)
     {
@@ -378,6 +380,33 @@ SoapySDR::ArgInfoList SoapyAudio::getSettingInfo(void) const
 {
     SoapySDR::ArgInfoList setArgs;
 
+    // Sample Offset
+    SoapySDR::ArgInfo sampleOffsetArg;
+    sampleOffsetArg.key = "sample_offset";
+    sampleOffsetArg.value = "0";
+    sampleOffsetArg.name = "Stereo Sample Offset";
+    sampleOffsetArg.description = "Offset stereo samples for off-by-one audio inputs.";
+    sampleOffsetArg.type = SoapySDR::ArgInfo::STRING;
+    
+    std::vector<std::string> sampleOffsetOpts;
+    std::vector<std::string> sampleOffsetOptNames;
+
+    sampleOffsetOpts.push_back("-2");
+    sampleOffsetOptNames.push_back("-2 Samples");
+    sampleOffsetOpts.push_back("-1");
+    sampleOffsetOptNames.push_back("-1 Samples");
+    sampleOffsetOpts.push_back("0");
+    sampleOffsetOptNames.push_back("0 Samples");
+    sampleOffsetOpts.push_back("1");
+    sampleOffsetOptNames.push_back("1 Samples");
+    sampleOffsetOpts.push_back("2");
+    sampleOffsetOptNames.push_back("2 Samples");
+
+    sampleOffsetArg.options = sampleOffsetOpts;
+    sampleOffsetArg.optionNames = sampleOffsetOptNames;
+
+    setArgs.push_back(sampleOffsetArg);
+
 #ifdef USE_HAMLIB
     // Rig Control
     SoapySDR::ArgInfo rigArg;
@@ -458,6 +487,17 @@ SoapySDR::ArgInfoList SoapyAudio::getSettingInfo(void) const
 
 void SoapyAudio::writeSetting(const std::string &key, const std::string &value)
 {
+    if (key == "sample_offset") {
+        try {
+            int sOffset = std::stoi(value);
+            
+            if (sOffset >= -2 && sOffset <= 2) {
+                sampleOffset = sOffset;
+            }
+        } catch (std::invalid_argument e) { }
+    }
+    
+    
 #ifdef USE_HAMLIB   
     bool rigReset = false; 
     if (key == "rig")
@@ -505,6 +545,10 @@ void SoapyAudio::writeSetting(const std::string &key, const std::string &value)
 
 std::string SoapyAudio::readSetting(const std::string &key) const
 {
+    if (key == "sample_offset") {
+        return std::to_string(sampleOffset);
+    }
+    
 #ifdef USE_HAMLIB
     if (key == "rig")
     {
