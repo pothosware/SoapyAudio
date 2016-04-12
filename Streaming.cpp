@@ -290,7 +290,7 @@ int SoapyAudio::readStream(
     void *buff0 = buffs[0];
 
     //are elements left in the buffer? if not, do a new read.
-    if (bufferedElems == 0)
+    if (bufferedElems == 0 || (sampleOffset && (bufferedElems < abs(sampleOffset))))
     {
         int ret = this->acquireReadBuffer(stream, _currentHandle, (const void **)&_currentBuff, flags, timeNs, timeoutUs);
         if (ret < 0) return ret;
@@ -298,6 +298,10 @@ int SoapyAudio::readStream(
     }
 
     size_t returnedElems = std::min(bufferedElems, numElems);
+
+    if (sampleOffset && (bufferedElems < abs(sampleOffset))) {
+        return 0;
+    }
 
     //convert into user's buff0
     if (sampleOffset) {
@@ -312,70 +316,62 @@ int SoapyAudio::readStream(
                     ftarget[i * 2 + 1] = 0;
                 }            
             }
-            if (cSetup == FORMAT_STEREO_IQ) {
+            else if (cSetup == FORMAT_STEREO_IQ) {
                 if (sampleOffset > 0) {
-                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2];
-                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2 + 1];
-                    }            
-                    size_t iStart = returnedElems-sampleOffset;
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2];
-                        ftarget[i * 2 + 1] = sampleOffsetBuffer[(i - iStart) * 2 + 1];
-                    }            
-                    for (int i = 0; i < sampleOffset; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[i * 2 + 1];
-                    }                    
-                } else {
                     size_t iStart = abs(sampleOffset);
-                    for (size_t i = 0; i < iStart; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2];
-                        ftarget[i * 2 + 1] = sampleOffsetBuffer[i * 2 + 1];
+                    for (size_t i = 0; i < iStart; i++) {
+                        ftarget[i * 2] = sampleOffsetBuffer[i];
+                        ftarget[i * 2 + 1] = _currentBuff[i * 2 + 1]; 
                     }            
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
-                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2];
-                    }            
-                    for (int i = 0; i < iStart; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
-                    }                    
-                }
-            }
-            if (cSetup == FORMAT_STEREO_QI) {
-                if (sampleOffset > 0) {
-                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
-                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2];
-                    }            
-                    size_t iStart = returnedElems-sampleOffset;
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
-                        ftarget[i * 2 + 1] = sampleOffsetBuffer[(i - iStart) * 2];
-                    }            
-                    for (int i = 0; i < sampleOffset; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[i * 2];
-                    }                    
-                } else {
-                    size_t iStart = abs(sampleOffset);
-                    for (size_t i = 0; i < iStart; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
-                        ftarget[i * 2 + 1] = sampleOffsetBuffer[i * 2];
-                    }            
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        ftarget[i * 2] = _currentBuff[i * 2];
-                        ftarget[i * 2 + 1] = _currentBuff[(i + sampleOffset) * 2 + 1];
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        ftarget[i * 2] = _currentBuff[(i + iStart) * 2];
+                        ftarget[i * 2 + 1] = _currentBuff[i * 2 + 1];
                     }            
                     for (int i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
-                    }                    
+                    }                  
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        ftarget[i * 2] = _currentBuff[i * 2];
+                        ftarget[i * 2 + 1] = sampleOffsetBuffer[i];
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        ftarget[i * 2] = _currentBuff[i * 2];
+                        ftarget[i * 2 + 1] = _currentBuff[(i + iStart) * 2 + 1];
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }
+                }
+            }
+            else if (cSetup == FORMAT_STEREO_QI) {
+                if (sampleOffset > 0) {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        ftarget[i * 2 + 1] = sampleOffsetBuffer[i];
+                        ftarget[i * 2] = _currentBuff[i * 2 + 1]; 
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        ftarget[i * 2 + 1] = _currentBuff[(i + iStart) * 2];
+                        ftarget[i * 2] = _currentBuff[i * 2 + 1];
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
+                    }                  
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        ftarget[i * 2 + 1] = _currentBuff[i * 2];
+                        ftarget[i * 2] = sampleOffsetBuffer[i];
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        ftarget[i * 2 + 1] = _currentBuff[i * 2];
+                        ftarget[i * 2] = _currentBuff[(i + iStart) * 2 + 1];
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }
                 }
             }            
         }
@@ -392,70 +388,62 @@ int SoapyAudio::readStream(
             }
             else if (cSetup == FORMAT_STEREO_IQ) {
                 if (sampleOffset > 0) {
-                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 32767.0);
-                    }            
-                    size_t iStart = returnedElems-sampleOffset;
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[(i - iStart) * 2 + 1] * 32767.0);
-                    }            
-                    for (int i = 0; i < sampleOffset; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[i * 2 + 1];
-                    }                    
-                } else {
                     size_t iStart = abs(sampleOffset);
-                    for (size_t i = 0; i < iStart; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i * 2 + 1] * 32767.0);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2] = int16_t(sampleOffsetBuffer[i] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
                     }            
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2] * 32767.0);
-                    }            
-                    for (int i = 0; i < iStart; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
-                    }                    
-                }
-            }
-            else if (cSetup == FORMAT_STEREO_QI) {
-                if (sampleOffset > 0) {
-                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2] * 32767.0);
-                    }            
-                    size_t iStart = returnedElems-sampleOffset;
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[(i - iStart) * 2] * 32767.0);
-                    }            
-                    for (int i = 0; i < sampleOffset; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[i * 2];
-                    }                    
-                } else {
-                    size_t iStart = abs(sampleOffset);
-                    for (size_t i = 0; i < iStart; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i * 2] * 32767.0);
-                    }            
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
-                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 32767.0);
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
                     }            
                     for (int i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
-                    }                    
+                    }                  
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i] * 32767.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 32767.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }
                 }
-            }            
+            }
+            if (cSetup == FORMAT_STEREO_QI) {
+                if (sampleOffset > 0) {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i] * 32767.0);
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2] * 32767.0);
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
+                    }                  
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2] = int16_t(sampleOffsetBuffer[i] * 32767.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 32767.0);
+                        itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 32767.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }
+                }
+            }
         }
         else if (asFormat == AUDIO_FORMAT_INT8)
         {
@@ -469,68 +457,60 @@ int SoapyAudio::readStream(
             }
             else if (cSetup == FORMAT_STEREO_IQ) {
                 if (sampleOffset > 0) {
-                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 127.0);
-                    }            
-                    size_t iStart = returnedElems-sampleOffset;
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[(i - iStart) * 2 + 1] * 127.0);
-                    }            
-                    for (int i = 0; i < sampleOffset; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[i * 2 + 1];
-                    }                    
-                } else {
                     size_t iStart = abs(sampleOffset);
-                    for (size_t i = 0; i < iStart; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[i * 2 + 1] * 127.0);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2] = int16_t(sampleOffsetBuffer[i] * 127.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 127.0);
                     }            
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2] * 127.0);
-                    }            
-                    for (int i = 0; i < iStart; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
-                    }                    
-                }
-            }
-            else if (cSetup == FORMAT_STEREO_QI) {
-                if (sampleOffset > 0) {
-                    for (size_t i = 0; i < returnedElems-sampleOffset; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2] * 127.0);
-                    }            
-                    size_t iStart = returnedElems-sampleOffset;
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[(i - iStart) * 2] * 127.0);
-                    }            
-                    for (int i = 0; i < sampleOffset; i++) {
-                        sampleOffsetBuffer[i] = _currentBuff[i * 2];
-                    }                    
-                } else {
-                    size_t iStart = abs(sampleOffset);
-                    for (size_t i = 0; i < iStart; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2 + 1] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(sampleOffsetBuffer[i * 2] * 127.0);
-                    }            
-                    for (size_t i = iStart; i < returnedElems; i++)
-                    {
-                        itarget[i * 2] = int8_t(_currentBuff[i * 2] * 127.0);
-                        itarget[i * 2 + 1] = int8_t(_currentBuff[(i + sampleOffset) * 2 + 1] * 127.0);
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2] * 127.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 127.0);
                     }            
                     for (int i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
-                    }                    
+                    }                  
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i] * 127.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 127.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }
+                }
+            }
+            if (cSetup == FORMAT_STEREO_QI) {
+                if (sampleOffset > 0) {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2 + 1] = int16_t(sampleOffsetBuffer[i] * 127.0);
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 127.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2] * 127.0);
+                        itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 127.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
+                    }                  
+                } else {
+                    size_t iStart = abs(sampleOffset);
+                    for (size_t i = 0; i < iStart; i++) {
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2] = int16_t(sampleOffsetBuffer[i] * 127.0);
+                    }            
+                    for (size_t i = iStart; i < returnedElems; i++) {
+                        itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 127.0);
+                        itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 127.0);
+                    }            
+                    for (int i = 0; i < iStart; i++) {
+                        sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
+                    }
                 }
             }            
         } 
