@@ -13,7 +13,7 @@ Homepage: https://github.com/pothosware/SoapyAudio/wiki
 Vcs-Git: https://github.com/pothosware/SoapyAudio.git
 Vcs-Browser: https://github.com/pothosware/SoapyAudio
 
-Package: soapysdr0.5-2-module-audio
+Package: soapysdr0.6-module-audio
 Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -22,7 +22,7 @@ Description: Soapy Audio - Audio device support for Soapy SDR.
 
 Package: soapysdr-module-audio
 Architecture: all
-Depends: soapysdr0.5-2-module-audio, ${misc:Depends}
+Depends: soapysdr0.6-module-audio, ${misc:Depends}
 Description: Soapy Audio - Audio device support for Soapy SDR.
  A Soapy module that supports Audio devices within the Soapy API.
  .
