@@ -60,8 +60,8 @@ if (APPLE)
 endif(APPLE)
 
 IF (WIN32)
-	set(USE_AUDIO_DS OFF CACHE BOOL "Support DirectSound Audio")
-	set(USE_AUDIO_WASAPI ON CACHE BOOL "Support WASAPI Audio")
+	set(USE_AUDIO_DS ON CACHE BOOL "Support DirectSound Audio")
+	set(USE_AUDIO_WASAPI OFF CACHE BOOL "Support WASAPI Audio")
 	# TODO:
 	# set(USE_AUDIO_ASIO OFF CACHE BOOL "Include support for ASIO Audio")
 
