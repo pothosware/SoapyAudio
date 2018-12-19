@@ -147,7 +147,7 @@ SOAPY_SDR_MODULE_UTIL(
     TARGET audioSupport
     SOURCES
         SoapyAudio.hpp
-        Registation.cpp
+        Registration.cpp
         Settings.cpp
         Streaming.cpp
         RtAudio/RtAudio.cpp
