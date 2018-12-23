@@ -1,5 +1,5 @@
-soapyaudio (0.0.0) unstable; urgency=low
+soapyaudio (0.1.0) unstable; urgency=low
 
-  * pending
+  * First release of SoapyAudio support
 
- -- Josh Blum <josh@pothosware.com>  Sun, 03 Jan 2016 13:18:35 -0800
+ -- Josh Blum <josh@pothosware.com>  Sat, 22 Dec 2018 23:43:05 -0600

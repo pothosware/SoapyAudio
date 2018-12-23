@@ -6,6 +6,7 @@ Uploaders: Josh Blum <josh@pothosware.com>
 Build-Depends:
     debhelper (>= 9.0.0),
     cmake,
+    libpulse-dev,
     libhamlib-dev,
     libsoapysdr-dev
 Standards-Version: 3.9.8
