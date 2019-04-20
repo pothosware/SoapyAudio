@@ -1,3 +1,8 @@
+Release 0.1.1 (pending)
+==========================
+
+- Support building against system rtaudio
+
 Release 0.1.0 (2018-12-21)
 ==========================
 

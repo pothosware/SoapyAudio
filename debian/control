@@ -6,6 +6,7 @@ Uploaders: Josh Blum <josh@pothosware.com>
 Build-Depends:
     debhelper (>= 9.0.0),
     cmake,
+    librtaudio-dev,
     libpulse-dev,
     libhamlib-dev,
     libsoapysdr-dev
