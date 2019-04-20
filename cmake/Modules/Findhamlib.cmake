@@ -14,7 +14,7 @@ find_path (__hamlib_pc_path NAMES hamlib.pc
   PATH_SUFFIXES lib/pkgconfig
 )
 if (__hamlib_pc_path)
-  set (ENV{PKG_CONFIG_PATH} "${__hamlib_pc_path}" "$ENV{PKG_CONFIG_PATH}")
+  set (ENV{PKG_CONFIG_PATH} "${__hamlib_pc_path} $ENV{PKG_CONFIG_PATH}")
   unset (__hamlib_pc_path CACHE)
 endif ()
 
