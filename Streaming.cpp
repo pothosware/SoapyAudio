@@ -327,7 +327,7 @@ int SoapyAudio::readStream(
                         ftarget[i * 2] = _currentBuff[(i + iStart) * 2];
                         ftarget[i * 2 + 1] = _currentBuff[i * 2 + 1];
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
                     }                  
                 } else {
@@ -340,7 +340,7 @@ int SoapyAudio::readStream(
                         ftarget[i * 2] = _currentBuff[i * 2];
                         ftarget[i * 2 + 1] = _currentBuff[(i + iStart) * 2 + 1];
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
                     }
                 }
@@ -356,7 +356,7 @@ int SoapyAudio::readStream(
                         ftarget[i * 2 + 1] = _currentBuff[(i + iStart) * 2];
                         ftarget[i * 2] = _currentBuff[i * 2 + 1];
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
                     }                  
                 } else {
@@ -369,7 +369,7 @@ int SoapyAudio::readStream(
                         ftarget[i * 2 + 1] = _currentBuff[i * 2];
                         ftarget[i * 2] = _currentBuff[(i + iStart) * 2 + 1];
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
                     }
                 }
@@ -397,7 +397,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2] * 32767.0);
                         itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
                     }                  
                 } else {
@@ -410,7 +410,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2] = int16_t(_currentBuff[i * 2] * 32767.0);
                         itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 32767.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
                     }
                 }
@@ -426,7 +426,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2] * 32767.0);
                         itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 32767.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
                     }                  
                 } else {
@@ -439,7 +439,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 32767.0);
                         itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 32767.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
                     }
                 }
@@ -466,7 +466,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2] * 127.0);
                         itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2 + 1] * 127.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
                     }                  
                 } else {
@@ -479,7 +479,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2] = int16_t(_currentBuff[i * 2] * 127.0);
                         itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 127.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
                     }
                 }
@@ -495,7 +495,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2 + 1] = int16_t(_currentBuff[(i + iStart) * 2] * 127.0);
                         itarget[i * 2] = int16_t(_currentBuff[i * 2 + 1] * 127.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2];
                     }                  
                 } else {
@@ -508,7 +508,7 @@ int SoapyAudio::readStream(
                         itarget[i * 2 + 1] = int16_t(_currentBuff[i * 2] * 127.0);
                         itarget[i * 2] = int16_t(_currentBuff[(i + iStart) * 2 + 1] * 127.0);
                     }            
-                    for (int i = 0; i < iStart; i++) {
+                    for (size_t i = 0; i < iStart; i++) {
                         sampleOffsetBuffer[i] = _currentBuff[(returnedElems-iStart+i) * 2 + 1];
                     }
                 }
