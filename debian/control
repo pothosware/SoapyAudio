@@ -10,7 +10,7 @@ Build-Depends:
     libpulse-dev,
     libhamlib-dev,
     libsoapysdr-dev
-Standards-Version: 3.9.8
+Standards-Version: 4.1.4
 Homepage: https://github.com/pothosware/SoapyAudio/wiki
 Vcs-Git: https://github.com/pothosware/SoapyAudio.git
 Vcs-Browser: https://github.com/pothosware/SoapyAudio

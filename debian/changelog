@@ -1,3 +1,9 @@
+soapyaudio (0.1.1-1) unstable; urgency=low
+
+  * Release 0.1.1 (2019-05-12)
+
+ -- Josh Blum <josh@pothosware.com>  Sun, 12 May 2019 22:44:15 -0000
+
 soapyaudio (0.1.0) unstable; urgency=low
 
   * First release of SoapyAudio support

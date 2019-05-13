@@ -1,4 +1,4 @@
-Release 0.1.1 (pending)
+Release 0.1.1 (2019-05-12)
 ==========================
 
 - Support building against system rtaudio
