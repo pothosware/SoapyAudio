@@ -584,7 +584,7 @@ chanSetup SoapyAudio::chanSetupStrToEnum(std::string chanOpt) {
 
 #ifdef USE_HAMLIB
 void SoapyAudio::checkRigThread() {    
-    if (!rigModel || !rigSerialRate || rigFile == "") {
+    if (!rigModel || (rigSerialRate < 0) || rigFile == "") {
         return;
     }
     if (!rigThread) {
