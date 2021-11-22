@@ -44,7 +44,11 @@ void RigThread::run() {
         return;
     }
 
-	strncpy(rig->state.rigport.pathname, rigFile.c_str(), FILPATHLEN - 1);
+    //provide HAMLIB_FILPATHLEN when building against Hamlib < 4.2
+    #ifndef HAMLIB_FILPATHLEN
+    #define HAMLIB_FILPATHLEN FILPATHLEN
+    #endif
+	strncpy(rig->state.rigport.pathname, rigFile.c_str(), HAMLIB_FILPATHLEN - 1);
     if (serialRate > 0)  // bypass for rate 0 used for USB controlled radios
 	    rig->state.rigport.parm.serial.rate = serialRate;
 
