@@ -52,7 +52,7 @@ jobs:
           - uses: actions/checkout@v2
           - name: Install dependencies
             run: |
-                sudo apt install --no-install-recommends libsoapysdr-dev soapysdr-tools libhamlib-dev libpulse-dev libjack-dev
+                sudo apt install --no-install-recommends libsoapysdr-dev soapysdr-tools libhamlib-dev libpulse-dev libjack-dev libalsa-dev
           - name: Build SoapyAudio
             run: |
                 mkdir ${{github.workspace}}/build
@@ -84,10 +84,6 @@ jobs:
                     - cc: clang
                       cxx: clang++
                       os: macos-11
-
-                    - cmake_config: -G "MinGW Makefiles"
-                      os: windows-2019
-                      msvc: false
 
                     # TODO: re-enable after MacOS Monterey Python issue fixed
                     #- cc: clang
@@ -156,6 +152,10 @@ jobs:
                     # MinGW
                     #
 
+                    - cmake_config: -G "MinGW Makefiles"
+                      os: windows-2019
+                      msvc: false
+
                     # TODO: reenable when Github updates GCC past 11.2.0
                     #- cmake_config: -G "MinGW Makefiles"
                     #  os: windows-2022
@@ -212,7 +212,7 @@ jobs:
               release: ${{matrix.release}}
               copyback: false
               prepare: |
-                  pkg install -y cmake SoapySDR comms/hamlib audio/pulse audio/jack audio/alsa
+                  pkg install -y cmake SoapySDR comms/hamlib pulseaudio audio/jack audio/alsa-lib
               run: |
                   # We can't separate these steps, so add prints for clarity.
 
