@@ -52,7 +52,7 @@ jobs:
           - uses: actions/checkout@v2
           - name: Install dependencies
             run: |
-                sudo apt install --no-install-recommends libsoapysdr-dev soapysdr-tools libhamlib-dev libpulse-dev libjack-dev libalsa-dev
+                sudo apt install --no-install-recommends libsoapysdr-dev soapysdr-tools libhamlib-dev libpulse-dev libjack-dev libasound2-dev
           - name: Build SoapyAudio
             run: |
                 mkdir ${{github.workspace}}/build
@@ -98,7 +98,7 @@ jobs:
           - uses: actions/checkout@v2
           - name: Install dependencies
             run: |
-                brew install hamlib pulse jack alsa
+                brew install hamlib pulse jack alsa-lib
 
                 # Build SoapySDR that supports OS X GCC modules
                 git clone https://github.com/pothosware/SoapySDR
