@@ -3,6 +3,8 @@ Release 0.1.2 (pending)
 
 - Fix build for Hamlib 4.2 and up
 - Fix hamlib control for Softrock
+- Support non-Core audio sources with internal RtAudio
+- Add build support for MinGW and OS X GCC
 
 Release 0.1.1 (2019-05-12)
 ==========================
