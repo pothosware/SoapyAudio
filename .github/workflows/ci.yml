@@ -112,7 +112,7 @@ jobs:
             run: |
                 mkdir ${{github.workspace}}/build
                 cd ${{github.workspace}}/build
-                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DUSE_AUDIO_JACK=ON ${{github.workspace}}
+                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DUSE_AUDIO_PULSE=ON -DUSE_AUDIO_JACK=ON ${{github.workspace}}
                 sudo make install
           - name: Test module registration
             run: |
@@ -222,7 +222,7 @@ jobs:
                   echo "----------------------------------"
                   mkdir build
                   cd build
-                  cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DUSE_AUDIO_PULSE=ON -USE_AUDIO_JACK=ON -DUSE_AUDIO_ALSA=ON ${{github.workspace}}
+                  cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DUSE_AUDIO_PULSE=ON -DUSE_AUDIO_JACK=ON -DUSE_AUDIO_ALSA=ON ${{github.workspace}}
                   make
 
                   echo
