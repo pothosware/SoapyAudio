@@ -98,7 +98,7 @@ jobs:
           - uses: actions/checkout@v2
           - name: Install dependencies
             run: |
-                brew install hamlib pulse jack
+                brew install hamlib jack
 
                 # Build SoapySDR that supports OS X GCC modules
                 git clone https://github.com/pothosware/SoapySDR
@@ -112,7 +112,7 @@ jobs:
             run: |
                 mkdir ${{github.workspace}}/build
                 cd ${{github.workspace}}/build
-                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DUSE_AUDIO_PULSE=ON -USE_AUDIO_JACK=ON ${{github.workspace}}
+                cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -USE_AUDIO_JACK=ON ${{github.workspace}}
                 sudo make install
           - name: Test module registration
             run: |
