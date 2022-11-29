@@ -90,10 +90,12 @@ IF (UNIX)
     SET(USE_AUDIO_OSS OFF CACHE BOOL "Support OSS Audio")
 
     IF(USE_AUDIO_PULSE)
-       SET (AUDIO_LIBS ${AUDIO_LIBS} pulse-simple pulse)
+       find_package(PulseAudio)
+       SET (AUDIO_LIBS ${AUDIO_LIBS} ${PULSEAUDIO_LIBRARIES})
        ADD_DEFINITIONS(
             -D__LINUX_PULSE__
        )
+       include_directories(${PULSEAUDIO_INCLUDE_DIRS})
     ENDIF(USE_AUDIO_PULSE)
 
     IF(USE_AUDIO_JACK)
@@ -106,11 +108,8 @@ IF (UNIX)
     ENDIF(USE_AUDIO_JACK)
 
     IF(USE_AUDIO_ALSA)
-       SET (AUDIO_LIBS ${AUDIO_LIBS} asound)
-       set(ALSA_INCLUDE_DIR "/usr/include" CACHE FILEPATH "ALSA include path")
-       include_directories(${ALSA_INCLUDE_DIR})
-       set(ALSA_LIB_DIR "/usr/lib" CACHE FILEPATH "ALSA lib path")
-       link_directories(${ALSA_LIB_DIR})
+       find_package(ALSA)
+       SET (AUDIO_LIBS ${AUDIO_LIBS} ALSA::ALSA)
        ADD_DEFINITIONS(
            -D__LINUX_ALSA__
        )
@@ -135,7 +134,7 @@ IF (APPLE AND NOT CMAKE_COMPILER_IS_GNUCXX)
 ENDIF (APPLE AND NOT CMAKE_COMPILER_IS_GNUCXX)
 
 message(STATUS "API libraries:")
-foreach(lib in ${AUDIO_LIBS})
+foreach(lib ${AUDIO_LIBS})
     message(STATUS " * ${lib}")
 endforeach()
 
