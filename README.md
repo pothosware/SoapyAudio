@@ -1,5 +1,9 @@
 # Soapy SDR plugin for Audio devices
 
+## Build Status
+
+![Build Status](https://github.com/pothosware/SoapyAudio/actions/workflows/ci.yml/badge.svg)
+
 ## Dependencies
 
 * SoapySDR - https://github.com/pothosware/SoapySDR/wiki
