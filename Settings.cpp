@@ -494,7 +494,7 @@ void SoapyAudio::writeSetting(const std::string &key, const std::string &value)
             if (sOffset >= -2 && sOffset <= 2) {
                 sampleOffset = sOffset;
             }
-        } catch (std::invalid_argument e) { }
+        } catch (const std::invalid_argument &) { }
     }
     
     
