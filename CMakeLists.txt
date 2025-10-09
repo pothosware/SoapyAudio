@@ -1,7 +1,7 @@
 ########################################################################
 # Build Soapy SDR support module for Audio Devices
 ########################################################################
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 3.5.0)
 project(SoapyAudio CXX)
 
 find_package(SoapySDR "0.4.0" NO_MODULE REQUIRED)
