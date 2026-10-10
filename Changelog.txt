@@ -1,6 +1,8 @@
-Release 0.1.2 (pending)
+Release 0.1.2 (2026-10-10)
 ==========================
 
+- Minor fixes
+- Updated CMake builds
 - Fix build for Hamlib 4.2 and up
 - Fix hamlib control for Softrock
 

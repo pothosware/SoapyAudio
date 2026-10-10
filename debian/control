@@ -1,10 +1,9 @@
 Source: soapyaudio
 Section: libs
 Priority: optional
-Maintainer: Charles J. Cliffe <cj@cubicproductions.com>
-Uploaders: Josh Blum <josh@pothosware.com>
+Maintainer: Christian W. Zuckschwerdt <zany@triq.net>
 Build-Depends:
-    debhelper (>= 9.0.0),
+    debhelper,
     cmake,
     librtaudio-dev,
     libpulse-dev,
@@ -15,7 +14,7 @@ Homepage: https://github.com/pothosware/SoapyAudio/wiki
 Vcs-Git: https://github.com/pothosware/SoapyAudio.git
 Vcs-Browser: https://github.com/pothosware/SoapyAudio
 
-Package: soapysdr0.7-module-audio
+Package: soapysdr0.9-module-audio
 Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -24,7 +23,7 @@ Description: Soapy Audio - Audio device support for Soapy SDR.
 
 Package: soapysdr-module-audio
 Architecture: all
-Depends: soapysdr0.7-module-audio, ${misc:Depends}
+Depends: soapysdr0.9-module-audio, ${misc:Depends}
 Description: Soapy Audio - Audio device support for Soapy SDR.
  A Soapy module that supports Audio devices within the Soapy API.
  .
