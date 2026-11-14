@@ -32,10 +32,10 @@ static std::vector<SoapySDR::Kwargs> findAudio(const SoapySDR::Kwargs &args)
 
     RtAudio endac;
 
-    int numDevices = endac.getDeviceCount();
+    std::vector<unsigned int> ids = endac.getDeviceIds();
 
-    for (int i = 0; i < numDevices; i++) {
-        RtAudio::DeviceInfo info = endac.getDeviceInfo(i);
+    for (std::size_t i = 0; i < ids.size(); i++) {
+        RtAudio::DeviceInfo info = endac.getDeviceInfo(ids[i]);
         SoapySDR::Kwargs soapyInfo;
 
         soapyInfo["device_id"] = std::to_string(i);
