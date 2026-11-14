@@ -58,7 +58,16 @@ if (APPLE)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wc++11-extensions")
 endif(APPLE)
 
-find_package(RtAudio)
+########################################################################
+# Find RtAudio build dependencies
+########################################################################
+set(EXTERNAL_RTAUDIO AUTO CACHE STRING "Use external RtAudio sources")
+set_property(CACHE EXTERNAL_RTAUDIO PROPERTY STRINGS AUTO ON OFF)
+if(EXTERNAL_RTAUDIO STREQUAL "AUTO")
+    find_package(RtAudio 6.0)
+elseif(EXTERNAL_RTAUDIO) # ON
+    find_package(RtAudio 6.0 REQUIRED)
+endif()
 
 if (RTAUDIO_FOUND)
 
