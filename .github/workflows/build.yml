@@ -10,32 +10,42 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-15, macos-26]
+        rtaudio: [OFF, ON]
+        # external won't work as MacPorts is still at 5.2.0
+        exclude:
+          - rtaudio: ON
     runs-on: ${{ matrix.os }}
-    name: Build on ${{ matrix.os }} (macports)
+    name: Build ${{ matrix.rtaudio }} on ${{ matrix.os }} (macports)
     steps:
       - uses: actions/checkout@v7
       - uses: melusina-org/setup-macports@v1
       - name: Install ports
-        run: port install SoapySDR rtaudio hamlib
+        run: port install SoapySDR hamlib
+      - name: Install RtAudio
+        if: ${{ matrix.rtaudio == 'ON' }}
+        run: port install rtaudio
       - name: Configure
-        run: cmake -B build
+        run: cmake -DEXTERNAL_RTAUDIO=${{ matrix.rtaudio }} -B build
       - name: Build
         run: cmake --build build
 
   macos_homebrew_build_job:
-    if: ${{ false }}  # disable for now, wrong rtaudio version
     strategy:
       fail-fast: false
       matrix:
         os: [macos-15, macos-26]
+        rtaudio: [OFF, ON]
     runs-on: ${{ matrix.os }}
-    name: Build on ${{ matrix.os }} (homebrew)
+    name: Build ${{ matrix.rtaudio }} on ${{ matrix.os }} (homebrew)
     steps:
       - uses: actions/checkout@v7
-      - name: Setup tools
-        run: brew install soapysdr rtaudio hamlib
+      - name: Setup libs
+        run: brew install soapysdr hamlib
+      - name: Install RtAudio
+        if: ${{ matrix.rtaudio == 'ON' }}
+        run: brew install rtaudio
       - name: Configure
-        run: cmake -B build
+        run: cmake -DEXTERNAL_RTAUDIO=${{ matrix.rtaudio }} -B build
       - name: Build
         run: cmake --build build
 
@@ -43,17 +53,30 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04]
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+        rtaudio: [OFF, ON]
+        # Note: up to Bookworm is rtaudio 5.2.0, from Trixie on is 6.0.1
+        exclude:
+          - os: ubuntu-22.04
+            rtaudio: ON
+          - os: ubuntu-24.04
+            rtaudio: ON
     runs-on: ${{ matrix.os }}
-    name: Build on ${{ matrix.os }}
+    name: Build ${{ matrix.rtaudio }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup tools
         run: |
           sudo apt-get update -q -y
           sudo apt-get install -y --no-install-recommends cmake ninja-build
-          sudo apt-get install -q -y libsoapysdr-dev librtaudio-dev libhamlib-dev
+      - name: Install libs
+        run: |
+          sudo apt-get install -q -y libsoapysdr-dev libpulse-dev libhamlib-dev
+      - name: Install RtAudio
+        if: ${{ matrix.rtaudio == 'ON' }}
+        run: |
+          sudo apt-get install -q -y librtaudio-dev
       - name: Configure
-        run: cmake -GNinja -B build
+        run: cmake -DEXTERNAL_RTAUDIO=${{ matrix.rtaudio }} -GNinja -B build
       - name: Build
         run: cmake --build build
