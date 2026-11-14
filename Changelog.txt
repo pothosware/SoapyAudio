@@ -1,3 +1,11 @@
+Release 0.2.0 (2026-11-14)
+==========================
+
+- Added EXTERNAL_RTAUDIO=AUTO ON OFF cmake option
+- Don't assume RtAudio device IDs start from zero when enumerating them (#25)
+- Fixed compatibility with RtAudio 6+ API (#24)
+- Updated to RtAudio 6.0.1
+
 Release 0.1.2 (2026-10-10)
 ==========================
 
